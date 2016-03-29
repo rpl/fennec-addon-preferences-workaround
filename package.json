@@ -1,0 +1,18 @@
+{
+  "name": "fennec-addon-preferences-workaround",
+  "version": "1.0.0",
+  "description": "Reusable JPM package which fix native-options issues on Firefox for Android",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "addon-sdk"
+  ],
+  "author": "Luca Greco <lgreco@mozilla.com>",
+  "license": "MPL-2.0",
+  "engines": {
+    "firefox": ">=44.0",
+    "fennec": ">=44.0"
+  }
+}
