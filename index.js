@@ -11,7 +11,9 @@ const { AddonManager } = Cu.import("resource://gre/modules/AddonManager.jsm");
 const { defer } = require("sdk/core/promise");
 
 // Import the original methods from the native-options that don't need to be fixed.
-const { validate, setDefaults, injectOptions } = require("sdk/preferences/native-options");
+const { validate, setDefaults } = require("sdk/preferences/native-options");
+
+const XUL_NS = "http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul";;
 
 // Tweaks on the original `require("sdk/preferences/native-options").enable` method
 // to fix the issues on Firefox for Android, by injecting the elements in the right place.
@@ -44,14 +46,11 @@ function enable({ preferences, id }) {
       header.style.display = "block";
       optionsBox.appendChild(header);
 
-      let box = doc.createElement("vbox");
-      optionsBox.appendChild(box);
-
       injectOptions({
         preferences: preferences,
         preferencesBranch: preferencesBranch,
         document: doc,
-        parent: box,
+        parent: optionsBox,
         id: id
       });
       localizeInlineOptions(doc);
@@ -60,6 +59,70 @@ function enable({ preferences, id }) {
 
   return enabled.promise;
 }
+
+// dynamically injects inline options into about:addons page at runtime
+// NOTE: Redefined to fix injection of xul controls into an xhtml document,
+// because on Firefox Desktop the about:addons page is a xul page document,
+// on Firefox for Android the about:addons page is an xhtml page.
+function injectOptions({ preferences, preferencesBranch, document, parent, id }) {
+  for (let { name, type, hidden, title, description, label, options, on, off } of preferences) {
+
+    if (hidden) {
+      continue;
+    }
+
+    let setting = document.createElementNS(XUL_NS, 'setting');
+    setting.setAttribute('pref-name', name);
+    setting.setAttribute('data-jetpack-id', id);
+    setting.setAttribute('pref', 'extensions.' + preferencesBranch + '.' + name);
+    setting.setAttribute('type', type);
+    setting.setAttribute('title', title);
+    if (description)
+      setting.setAttribute('desc', description);
+
+    if (type === 'file' || type === 'directory') {
+      setting.setAttribute('fullpath', 'true');
+    }
+    else if (type === 'control') {
+      let button = document.createElementNS(XUL_NS, 'button');
+      button.setAttribute('pref-name', name);
+      button.setAttribute('data-jetpack-id', id);
+      button.setAttribute('label', label);
+      button.setAttribute('oncommand', "Services.obs.notifyObservers(null, '" +
+                                        id + "-cmdPressed', '" + name + "');");
+      setting.appendChild(button);
+    }
+    else if (type === 'boolint') {
+      setting.setAttribute('on', on);
+      setting.setAttribute('off', off);
+    }
+    else if (type === 'menulist') {
+      let menulist = document.createElementNS(XUL_NS, 'menulist');
+      let menupopup = document.createElementNS(XUL_NS, 'menupopup');
+      for (let { value, label } of options) {
+        let menuitem = document.createElement(XUL_NS, 'menuitem');
+        menuitem.setAttribute('value', value);
+        menuitem.setAttribute('label', label);
+        menupopup.appendChild(menuitem);
+      }
+      menulist.appendChild(menupopup);
+      setting.appendChild(menulist);
+    }
+    else if (type === 'radio') {
+      let radiogroup = document.createElementNS(XUL_NS, 'radiogroup');
+      for (let { value, label } of options) {
+        let radio = document.createElementNS(XUL_NS, 'radio');
+        radio.setAttribute('value', value);
+        radio.setAttribute('label', label);
+        radiogroup.appendChild(radio);
+      }
+      setting.appendChild(radiogroup);
+    }
+
+    parent.appendChild(setting);
+  }
+}
+
 
 // Check if the workaround is needed:
 // native-options does stuff directly with preferences key from package.json
