@@ -40,11 +40,9 @@ function enable({ preferences, id }) {
     }
 
     if (data === id) {
-      optionsBox.style.display = "block";
-
-      let header = doc.querySelector(".options-header").cloneNode(true);
-      header.style.display = "block";
-      optionsBox.appendChild(header);
+      // NOTE: This disable the CSS rule that makes the options invisible
+      let item = doc.querySelector('#addons-details .addon-item');
+      item.removeAttribute("optionsURL");
 
       injectOptions({
         preferences: preferences,
@@ -100,7 +98,7 @@ function injectOptions({ preferences, preferencesBranch, document, parent, id })
       let menulist = document.createElementNS(XUL_NS, 'menulist');
       let menupopup = document.createElementNS(XUL_NS, 'menupopup');
       for (let { value, label } of options) {
-        let menuitem = document.createElement(XUL_NS, 'menuitem');
+        let menuitem = document.createElementNS(XUL_NS, 'menuitem');
         menuitem.setAttribute('value', value);
         menuitem.setAttribute('label', label);
         menupopup.appendChild(menuitem);
