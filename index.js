@@ -7,6 +7,7 @@ const { Cu } = require('chrome');
 const { on } = require('sdk/system/events');
 const { preferencesBranch } = require('sdk/self');
 const { localizeInlineOptions } = require('sdk/l10n/prefs');
+const { Services } = require("resource://gre/modules/Services.jsm");
 const { AddonManager } = Cu.import("resource://gre/modules/AddonManager.jsm");
 const { defer } = require("sdk/core/promise");
 
@@ -86,8 +87,9 @@ function injectOptions({ preferences, preferencesBranch, document, parent, id })
       button.setAttribute('pref-name', name);
       button.setAttribute('data-jetpack-id', id);
       button.setAttribute('label', label);
-      button.setAttribute('oncommand', "Services.obs.notifyObservers(null, '" +
-                                        id + "-cmdPressed', '" + name + "');");
+      button.addEventListener('command', () => {
+        Services.obs.notifyObservers(null, `${id}-cmdPressed`, name);
+      }, true);
       setting.appendChild(button);
     }
     else if (type === 'boolint') {
