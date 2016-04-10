@@ -64,10 +64,9 @@ function enable({ preferences, id }) {
 // because on Firefox Desktop the about:addons page is a xul page document,
 // on Firefox for Android the about:addons page is an xhtml page.
 function injectOptions({ preferences, preferencesBranch, document, parent, id }) {
-  for (let { name, type, hidden, title, description, label, options, on, off } of preferences) {
-
+  preferences.forEach(({ name, type, hidden, title, description, label, options, on, off }) => {
     if (hidden) {
-      continue;
+      return;
     }
 
     let setting = document.createElementNS(XUL_NS, 'setting');
@@ -120,7 +119,7 @@ function injectOptions({ preferences, preferencesBranch, document, parent, id })
     }
 
     parent.appendChild(setting);
-  }
+  });
 }
 
 
@@ -133,7 +132,7 @@ const { preferences } = metadata;
 
 const xulApp = require("sdk/system/xul-app");
 const isFennec = xulApp.is("Fennec");
-const isVersionInRange = xulApp.versionInRange(xulApp.platformVersion, "44.0", "*");
+const isVersionInRange = xulApp.versionInRange(xulApp.platformVersion, "44.0", "47.*");
 
 // Apply the workaround on Firefox for Android >= 44.0
 if (isFennec && isVersionInRange && preferences && preferences.length > 0) {
